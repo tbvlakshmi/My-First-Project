@@ -1,0 +1,139 @@
+
+========================================================== 
+pom.xml =================================================
+
+STEP-1:
+add properties
+
+<properties>
+<java.version>1.8</java.version>
+<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+<maven.compiler.source>1.8</maven.compiler.source>
+<maven.compiler.target>1.8</maven.compiler.target>
+</properties>
+
+STEP-2:
+
+<build>
+<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<version>3.8.1</version>
+				<configuration>
+				<source>1.8</source>
+				<target>1.8</target>
+				</configuration>
+			</plugin>
+		<plugin>
+			<groupId>org.apache.maven.plugins</groupId>
+			<artifactId>maven-surefire-plugin</artifactId>
+			<version>3.0.0-M5</version>
+			<configuration>
+			<testFailureIgnore>true</testFailureIgnore>
+			<includes>
+			<include>**/*WebRunnerMain.java</include>
+			<!--<include>${testsuitnamefromci}</include> -->
+			</includes>
+			<!--<suiteXmlFiles> <suiteXmlFile>testng.xml</suiteXmlFile> </suiteXmlFiles> -->
+
+			</configuration>
+		</plugin>
+<plugin>
+<groupId>net.masterthought</groupId>
+<artifactId>maven-cucumber-reporting</artifactId>
+<version>5.3.0</version>
+<executions>
+<execution>
+<id>execution</id>
+<phase>verify</phase>
+<goals>
+<goal>generate</goal>
+</goals>
+<configuration>
+<projectName>ASDA Test Automation Report</projectName>
+<skip>false</skip>
+<outputDirectory>target/html-reports</outputDirectory>
+<inputDirectory>target/cucumber-reports</inputDirectory>
+<jsonFiles>
+<param>**/*.json</param>
+</jsonFiles>
+<mergeFeaturesById>false</mergeFeaturesById>
+<!-- optional, set true to get a final report with latest results
+of the same test from different test runs -->
+<mergeFeaturesWithRetest>true</mergeFeaturesWithRetest>
+<!-- optional, set true to fail build on test failures -->
+<checkBuildResult>true</checkBuildResult>
+<enableFlashCharts>true</enableFlashCharts>
+<parallelTesting>false</parallelTesting>
+<buildNumber>10.2.1</buildNumber>
+<skippedFails>false</skippedFails>
+</configuration>
+</execution>
+</executions>
+</plugin>
+</plugins>
+</build>
+STEP-3: Create a "reports" folder inside project
+
+STEP-3: run the maven build from
+mvn clean install
+
+
+========================================================== TestRunner.java =================================================
+
+@CucumberOptions(
+plugin = {"pretty",
+                "html:target/cucumber-reports/cucumber.html",
+                "json:target/cucumber-reports/cucumber.json"
+        },
+features = "src/test/resources/features",
+glue={"com.qe.vt.asd.tst.stepdef"},
+tags = "@CartValue",
+monochrome = true
+
+)
+
+========================================================== CucumberHooks.java =================================================
+
+STEP-1: CucumberHooks class move to "stepdef" under package
+
+@Before
+public void setup(Scenario scenario) {
+logger.atDebug().log("Before Scenaro Name.................." + scenario.getName());
+logger.atDebug().log("Before Scenaro LineNumber.................." + scenario.getLine());
+logger.atDebug().log("Before Scenaro URI.................." + scenario.getUri());
+}
+
+@After
+public void teardown(Scenario scenario) {
+logger.atDebug().log("After scenario.isFailed.................." + scenario.isFailed());
+// validate if scenario has failed
+// if(scenario.isFailed()) {
+final byte[] screenshot = ((TakesScreenshot) driver).getScreenshotAs(OutputType.BYTES);
+scenario.attach(screenshot, "image/png", scenario.getName());
+// }
+
+takeSnapShot();
+quitDriver();
+}
+
+ public void takeSnapShot() {
+ 
+ TakesScreenshot scrShort = ((TakesScreenshot) driver); try { File sceFile =
+ scrShort.getScreenshotAs(OutputType.FILE); File DestFile = new
+ File("./screenshots/Screenshot-" + Utilities.getDateAndTime() + ".png");
+ 
+ FileHandler.copy(sceFile, DestFile); } catch (IOException e) {
+ logger.atError().log("Exception inside takeSnapShot()......" +
+ e.getMessage()); e.printStackTrace(); } }
+
+}
+
+
+STEP-2:
+
+
+========================================================== Run the test scenario =================================================
+
+mvn clean verify
